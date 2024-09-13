@@ -7,7 +7,7 @@ export async function deleteColumnFromSheet(payload) {
         body: JSON.stringify({ sheetID: payload.sheetID })
     }
 
-    const response = await fetch(`http://localhost:4000/api/sheet/delete/column/${payload.colSheetID}`, req)
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/sheet/delete/column/${payload.colSheetID}`, req)
     if (!response.ok) {
         if (response.status === 409) throw new Error('Name has to be unique.')
         throw new Error(response.statusText)

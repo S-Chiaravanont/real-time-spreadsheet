@@ -8,8 +8,7 @@ export async function fetchDirectories(directoryID) {
             'Content-Type': 'application/json',
         },
     }
-    // return fetch(`http://localhost:4000/api/directory/get/${queryKey[1]}`, req).then((res) =>
-    const response = await fetch(`http://localhost:4000/api/directory/get/${directoryID}`, req)
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/directory/get/${directoryID}`, req)
     if (!response.ok) {
         if (response.status === 409) throw new Error('Name has to be unique.')
         throw new Error(response.statusText)

@@ -13,7 +13,7 @@ export async function getSheetData(sheetID) {
             'Content-Type': 'application/json',
         },
     }
-    const response = await fetch(`http://localhost:4000/api/sheet/get/${sheetID}`, req)
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/sheet/get/${sheetID}`, req)
     if (!response.ok) {
         // console.log(response)
         throw new Error(response.statusText)

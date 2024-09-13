@@ -8,8 +8,8 @@ export async function fetchNavLocation(ID, type) {
         },
     }
     let route;
-    if (type === 'directory') route = `http://localhost:4000/api/navigation/get/directory/${ID}`
-    else if (type === 'sheet') route = `http://localhost:4000/api/navigation/get/sheet/${ID}`
+    if (type === 'directory') route = `${import.meta.env.VITE_API_URL}/api/navigation/get/directory/${ID}`
+    else if (type === 'sheet') route = `${import.meta.env.VITE_API_URL}/api/navigation/get/sheet/${ID}`
     else throw new Error('Cannot find the folder/file')
     const response = await fetch(route, req)
     if (!response.ok) {

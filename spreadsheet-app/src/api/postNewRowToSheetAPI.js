@@ -8,7 +8,7 @@ export async function postNewRow(sheetID) {
         },
         body: JSON.stringify(sheetID)
     }
-    const response = await fetch(`http://localhost:4000/api/sheet/create/newRowToSheet`, req)
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/sheet/create/newRowToSheet`, req)
     if (!response.ok) {
         // console.log(response)
         if (response.status === 409) throw new Error('Name has to be unique.')

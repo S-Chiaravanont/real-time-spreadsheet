@@ -2,20 +2,33 @@ const express = require('express');
 const cors = require('cors');
 const http = require('http');
 const { Server } = require("socket.io");
-// const socketIo = require('socket.io');
 const mySQLConnection = require('./modules/mysqlConnection')
-const port = 4000;
+const dotenv = require('dotenv');
+dotenv.config();
+const port = 4002;
+
 
 const app = express();
+app.use(cors())
 
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: ["http://localhost:5173", "http://localhost:5174"]
+        origin: (origin, callback) => {
+            console.log(origin)
+            const allowedOrigins = [process.env.BASE_URL1, process.env.BASE_URL2];
+            console.log('allowedOrigins', allowedOrigins)
+            if (allowedOrigins.includes(origin) || !origin) {
+                callback(null, true);
+            } else {
+                callback(new Error("Not allowed by CORS"));
+            }
+        },
+        methods: ["GET", "POST", "DELETE", "UPDATE", "PATCH"],
+        credentials: true
     }
 });
 
-app.use(cors())
 
 app.use(express.json())
 
@@ -48,10 +61,10 @@ app.get('/api/sheet/get/:sheetID', (req, res, next) => {
     const { sheetID } = req.params;
     const query = `SELECT s.sheetID, s.directoryID, s.sheetLabel, s.sheetURL, cs.colSheetID, cs.columnID, c.columnLabel, c.datatype, cs.positionIndex, r.rowID, rp.value, rp.responseID
     FROM spreadsheet.sheet AS s 
-    LEFT JOIN spreadsheet.colSheetRel AS cs ON cs.sheetID = s.sheetID 
+    LEFT JOIN colSheetRel AS cs ON cs.sheetID = s.sheetID 
     LEFT JOIN spreadsheet.column AS c ON c.columnID = cs.columnID 
     LEFT JOIN spreadsheet.row AS r ON r.sheetID = s.sheetID 
-    LEFT JOIN spreadsheet.response AS rp ON rp.colSheetID = cs.colSheetID AND rp.rowID = r.rowID 
+    LEFT JOIN response AS rp ON rp.colSheetID = cs.colSheetID AND rp.rowID = r.rowID 
     WHERE s.sheetID = ?
     ORDER BY cs.positionIndex ASC, rowID ASC`
     const params = [parseInt(sheetID)]
@@ -102,9 +115,7 @@ app.get('/api/sheet/get/:sheetID', (req, res, next) => {
 })
 
 app.get('/api/column/get/', (req, res, next) => {
-    const query = `
-        select *
-        from spreadsheet.column`
+    const query = `select * from spreadsheet.column`;
     const params = [];
     mySQLConnection.query(query, params, (err, results) => {
         if (err) {
@@ -134,7 +145,7 @@ app.post('/api/column/create/newColumn', (req, res, next) => {
 
 app.post('/api/directory/create/newDirectory', (req, res, next) => {
     const { directoryLabel, directoryURL, directoryType, parentID } = req.body;
-    const query = `INSERT INTO spreadsheet.directory (directoryLabel, directoryURL, directoryType, parentID)
+    const query = `INSERT INTO directory (directoryLabel, directoryURL, directoryType, parentID)
 	VALUES (?, ?, ?, ?)`;
     const params = [directoryLabel, directoryURL, directoryType, parentID];
     mySQLConnection.query(query, params, (err, results) => {
@@ -167,13 +178,13 @@ app.get('/api/directory/get/:parentID', (req, res, next) => {
     const { parentID } = req.params;
     const query = `
         SELECT d.*, s.sheetID, s.sheetLabel, s.sheetURL
-        FROM spreadsheet.directory AS d
+        FROM directory AS d
         LEFT JOIN spreadsheet.sheet AS s ON d.directoryID = s.directoryID
         WHERE (s.directoryID = ?)
         AND sheetID IS NOT NULL
         UNION
         SELECT *, NULL AS sheetID, NULL AS sheetLabel, NULL AS sheetURL
-        FROM spreadsheet.directory AS d
+        FROM directory AS d
         WHERE d.parentID = ?`
     const params = [parentID, parentID];
     mySQLConnection.query(query, params, (err, results) => {
@@ -193,12 +204,12 @@ app.delete('/api/directory/delete/type/:type/id/:id', (req, res, next) => {
     const params = parseInt(id);
     if (type === 'directory') {
         query = `
-        DELETE FROM spreadsheet.directory
+        DELETE FROM directory
         WHERE directoryID = ?
         `
     } else if (type === 'sheet') {
         query = `
-        DELETE FROM spreadsheet.sheet
+        DELETE FROM sheet
         WHERE sheetID = ?
         `
     } else {
@@ -255,7 +266,7 @@ app.get('/api/navigation/get/sheet/:sheetID', (req, res, next) => {
     FROM temp t
     UNION
     SELECT d.*, s.sheetID, s.sheetLabel, s.sheetURL
-    FROM spreadsheet.directory AS d
+    FROM directory AS d
     LEFT JOIN spreadsheet.sheet AS s ON d.directoryID = s.directoryID
     WHERE s.sheetID = ?
     ORDER BY parentID ASC, sheetID ASC;`
@@ -272,7 +283,7 @@ app.get('/api/navigation/get/sheet/:sheetID', (req, res, next) => {
 app.post('/api/sheet/create/newColumnToSheet', (req, res, next) => {
     const { sheetID, selectedColumnID, selectedIndex } = req.body;
     // check if column exist in this sheet to prevent duplicate
-    const checkingQuery = `SELECT colSheetID FROM spreadsheet.colSheetRel 
+    const checkingQuery = `SELECT colSheetID FROM colSheetRel 
     WHERE sheetID = ?
     AND columnID = ?`;
     const checkingParams = [sheetID, selectedColumnID];
@@ -286,11 +297,11 @@ app.post('/api/sheet/create/newColumnToSheet', (req, res, next) => {
         }
         // shift all existing columns after given positionIndex by 1 to make space for new column 
         const query = `
-        UPDATE spreadsheet.colSheetRel
+        UPDATE colSheetRel
             SET positionIndex = positionIndex + 1
             WHERE sheetID = ?
             AND positionIndex >= ?;
-        INSERT INTO spreadsheet.colSheetRel (sheetID, columnID, positionIndex)
+        INSERT INTO colSheetRel (sheetID, columnID, positionIndex)
             VALUES (?, ?, ?);`;
         const params = [sheetID, selectedIndex, sheetID, selectedColumnID, selectedIndex];
         mySQLConnection.query(query, params, (err, results) => {
@@ -329,7 +340,7 @@ app.post('/api/sheet/create/newResponseToSheet', (req, res, next) => {
     let successMessage;
     let statusCode;
     if (!responseID) {
-        const checkingQuery = `SELECT responseID FROM spreadsheet.response
+        const checkingQuery = `SELECT responseID FROM response
         WHERE rowID = ?
         AND colSheetID = ?`
         const checkingParams = [rowID, colSheetID]
@@ -339,14 +350,14 @@ app.post('/api/sheet/create/newResponseToSheet', (req, res, next) => {
                 return res.status(500).json({ message: 'Bad connection' })
             }
             if (results.length > 0) {
-                query = `UPDATE spreadsheet.response
+                query = `UPDATE response
                 SET value = ?
                 WHERE responseID = ?`
                 params = [value, responseID]
                 successMessage = 'Successfully update response'
                 statusCode = 204
             } else {
-                query = `INSERT INTO spreadsheet.response (rowID, value, colSheetID)
+                query = `INSERT INTO response (rowID, value, colSheetID)
                 VALUES (?, ?, ?)`
                 params = [rowID, value, colSheetID]
                 successMessage = 'Successfully insert new response'
@@ -362,7 +373,7 @@ app.post('/api/sheet/create/newResponseToSheet', (req, res, next) => {
             })
         })
     } else {
-        query = `UPDATE spreadsheet.response
+        query = `UPDATE response
         SET value = ?
         WHERE responseID = ?`
         params = [value, responseID]
@@ -384,7 +395,7 @@ app.patch('/api/sheet/patch/newColPosToSheet', (req, res, next) => {
     let query = '';
     const params = [];
     newColPos.forEach((position) => {
-        query += 'UPDATE spreadsheet.colSheetRel SET positionIndex = ? WHERE colSheetID = ?; '
+        query += 'UPDATE colSheetRel SET positionIndex = ? WHERE colSheetID = ?; '
         params.push(position.positionIndex, position.colSheetID)
     })
     mySQLConnection.query(query, params, (err, results) => {
@@ -416,7 +427,7 @@ app.delete('/api/sheet/delete/row/:rowID', (req, res, next) => {
 app.delete('/api/sheet/delete/column/:colSheetID', (req, res, next) => {
     const { colSheetID } = req.params;
     const { sheetID } = req.body;
-    let query = `DELETE FROM spreadsheet.colSheetRel
+    let query = `DELETE FROM colSheetRel
         WHERE colSheetID = ?`;
     const params = parseInt(colSheetID);
     mySQLConnection.query(query, params, (err, results) => {
@@ -429,9 +440,6 @@ app.delete('/api/sheet/delete/column/:colSheetID', (req, res, next) => {
     })
 })
 
-// app.listen(port, () => {
-//     console.log(`Server is running on port ${port}`);
-// });
 server.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
