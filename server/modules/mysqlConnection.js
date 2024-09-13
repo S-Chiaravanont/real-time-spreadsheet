@@ -1,11 +1,13 @@
 const mysql = require('mysql2');
+const dotenv = require('dotenv');
+dotenv.config();
 
 // Create the connection to database
 const connection = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'root',
-    database: 'spreadsheet',
+    host: process.env.DBHOST,
+    user: process.env.DBUSER,
+    password: process.env.DBPASSWORD,
+    database: process.env.DATABASENAME,
     multipleStatements: true
 });
 

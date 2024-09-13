@@ -72,7 +72,7 @@ export default function SheetSideBar({ columnData, type, navLoc, navPending, nav
             <div className="sidebar-container">
                 <div className="sidebar-content">
                     <div className="sidebar-header">
-                        <div className="brand-name">AMERICOR</div>
+                        <div className="brand-name">SCHIARAV Design</div>
                     </div>
                     <hr className="divider" />
                     <div style={{ padding: '20px' }}>
@@ -88,7 +88,7 @@ export default function SheetSideBar({ columnData, type, navLoc, navPending, nav
             <div className="sidebar-container">
                 <div className="sidebar-content">
                     <div className="sidebar-header">
-                        <div className="brand-name">AMERICOR</div>
+                        <div>SCHIARAV DESIGN</div>
                     </div>
                     <hr className="divider" />
 

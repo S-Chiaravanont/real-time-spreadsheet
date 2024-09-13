@@ -41,7 +41,8 @@ const DraggableTableHeader = ({ header, table, columnResizeMode, setColPopupStat
                 ? null
                 :
                 <div className='d-flex' style={{ justifyContent: 'space-evenly' }}>
-                    <button onClick={(event) => handleColumnOptionPopup(event, header)}>?</button>
+                    <button
+                        onClick={(event) => handleColumnOptionPopup(event, header)}>?</button>
                     <div
                         {...{
                             className: header.column.getCanSort()
