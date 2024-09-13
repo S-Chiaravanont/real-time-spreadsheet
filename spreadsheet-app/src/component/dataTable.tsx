@@ -21,6 +21,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import io from 'socket.io-client';
 let socket: any = null;
 
+const BASEURL = import.meta.env.VITE_API_URL;
+
 declare module '@tanstack/react-table' {
     interface TableMeta<TData extends RowData> {
         updateData: (rowIndex: number, columnId: string, value: unknown) => void
@@ -251,7 +253,7 @@ export default function DataTable({ columnData, sheetID }) {
 
     useEffect(() => {
         // Connect to the Socket.io server and join the room for the specific sheet
-        socket = io('http://localhost:4000', {
+        socket = io(BASEURL, {
             query: { sheetID } // Send sheetId as part of the connection query
         });
 

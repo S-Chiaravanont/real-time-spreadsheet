@@ -8,7 +8,7 @@ export async function patchColPosToSheet(patchColPos) {
         },
         body: JSON.stringify(patchColPos)
     }
-    const response = await fetch(`http://localhost:4000/api/sheet/patch/newColPosToSheet`, req)
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/sheet/patch/newColPosToSheet`, req)
     if (!response.ok) {
         // console.log(response)
         if (response.status === 409) throw new Error('Name has to be unique.')
